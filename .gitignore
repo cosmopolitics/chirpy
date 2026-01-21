@@ -1,5 +1,5 @@
 .direnv/
-out
+.env
 test.json
 result
-.env
+chirpy

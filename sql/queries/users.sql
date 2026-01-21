@@ -8,3 +8,7 @@ values (
   $1
 )
 returning *;
+--
+
+-- name: Reset :exec
+delete from users where id = id;

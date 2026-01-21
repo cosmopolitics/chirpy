@@ -32,3 +32,13 @@ func (q *Queries) AddUser(ctx context.Context, email string) (User, error) {
 	)
 	return i, err
 }
+
+const reset = `-- name: Reset :exec
+
+delete from users where id = id
+`
+
+func (q *Queries) Reset(ctx context.Context) error {
+	_, err := q.db.ExecContext(ctx, reset)
+	return err
+}

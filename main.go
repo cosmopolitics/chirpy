@@ -6,8 +6,10 @@ import (
 	"net/http"
 	"os"
 	"sync/atomic"
+	"time"
 
 	"github.com/cosmopolitics/chirpy/internal/database"
+	"github.com/google/uuid"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
 )
@@ -15,6 +17,14 @@ import (
 type apiConfig struct {
 	count   atomic.Int64
 	dbquery *database.Queries
+}
+
+type Chirp struct {
+	ID         uuid.UUID `json:"chirp_id"`
+	UserID     uuid.UUID `json:"user_id"`
+	Created_At time.Time `json:"created_at"`
+	Updated_At time.Time `json:"updated_at"`
+	Body       string    `json:"body"`
 }
 
 func main() {
@@ -39,7 +49,8 @@ func main() {
 	mux.HandleFunc("GET /api/healthz", handler_readiness)
 	mux.HandleFunc("GET /admin/metrics", cfg.handler_metrics)
 	mux.HandleFunc("POST /admin/reset", cfg.handler_reset)
-	mux.HandleFunc("POST /api/validate_chirp", handler_chirp_validator)
+	mux.HandleFunc("POST /api/chirps", cfg.handler_chirp)
+	mux.HandleFunc("POST /api/users", cfg.handler_create_user)
 
 	srv := &http.Server{
 		Addr:    ":" + port,
