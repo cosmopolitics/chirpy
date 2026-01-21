@@ -57,8 +57,8 @@ func handler_chirp_validator(w http.ResponseWriter, req *http.Request) {
 	if len(params.Body) > maxchirplen {
 		respondWithError(w, http.StatusBadRequest, "max chirp length exceeded", nil)
 		return
-	} 
-	
+	}
+
 	params.Body = censor_chirp(params.Body)
 	respondWithJSON(w, http.StatusOK, returnVals{
 		Cleaned_body: params.Body,
@@ -73,8 +73,8 @@ func censor_chirp(chirp string) string {
 
 			split_chirp_at := strings.Index(strings.ToLower(chirp), cword)
 			splitchirp := []string{
-				chirp[:split_chirp_at], 
-				chirp[split_chirp_at + len(cword):],
+				chirp[:split_chirp_at],
+				chirp[split_chirp_at+len(cword):],
 			}
 			chirp = strings.Join(splitchirp, censor)
 		}

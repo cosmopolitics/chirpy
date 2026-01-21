@@ -28,6 +28,7 @@
 
             postgresql
             goose
+            sqlc
           ];
         };
 
