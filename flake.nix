@@ -13,13 +13,14 @@
       system: let
         pkgs = nixpkgs.legacyPackages.${system};
       in {
-        packages = {
-          default = pkgs.buildGoModule {
-            pname = "chirpy";
-            version = "1.0.0";
-            src = ./.;
-            vendorHash = null;
-          };
+        packages.default = pkgs.buildGoModule {
+          pname = "chirpy";
+          version = "v0.0.0";
+          src = ./.;
+          vendorHash = "sha256-e9OJmQCUgtur6cuxwCaM8csZomE7rEUbtFi9aiEQ7fY=";
+          nativeBuildInputs = with pkgs; [
+            go
+          ];
         };
         devShells.default = pkgs.mkShell {
           packages = with pkgs; [
