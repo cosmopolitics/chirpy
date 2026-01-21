@@ -13,6 +13,14 @@
       system: let
         pkgs = nixpkgs.legacyPackages.${system};
       in {
+        packages = {
+          default = pkgs.buildGoModule {
+            pname = "chirpy";
+            version = "1.0.0";
+            src = ./.;
+            vendorHash = null;
+          };
+        };
         devShells.default = pkgs.mkShell {
           packages = with pkgs; [
             go
@@ -20,7 +28,6 @@
 
             postgresql
             goose
-            sqlfluff
           ];
         };
 
