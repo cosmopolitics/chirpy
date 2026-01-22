@@ -20,11 +20,11 @@ type apiConfig struct {
 }
 
 type Chirp struct {
-	ID         uuid.UUID `json:"chirp_id"`
-	UserID     uuid.UUID `json:"user_id"`
-	Created_At time.Time `json:"created_at"`
-	Updated_At time.Time `json:"updated_at"`
-	Body       string    `json:"body"`
+	ID        uuid.UUID `json:"chirp_id"`
+	Uid       uuid.UUID `json:"user_id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Body      string    `json:"body"`
 }
 
 func main() {
@@ -49,8 +49,10 @@ func main() {
 	mux.HandleFunc("GET /api/healthz", handler_readiness)
 	mux.HandleFunc("GET /admin/metrics", cfg.handler_metrics)
 	mux.HandleFunc("POST /admin/reset", cfg.handler_reset)
-	mux.HandleFunc("POST /api/chirps", cfg.handler_chirp)
+	mux.HandleFunc("POST /api/chirps", cfg.handler_add_chirp)
+	mux.HandleFunc("GET /api/chirps", cfg.handler_get_chirps)
 	mux.HandleFunc("POST /api/users", cfg.handler_create_user)
+	mux.HandleFunc("GET /api/chirps/{chirp_id}", cfg.handler_get_a_chirp)
 
 	srv := &http.Server{
 		Addr:    ":" + port,

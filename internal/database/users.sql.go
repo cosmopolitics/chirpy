@@ -11,24 +11,31 @@ import (
 
 const addUser = `-- name: AddUser :one
 insert into
-  users (id, created_at, updated_at, email)
+  users (id, created_at, updated_at, email, password)
 values (
   (select gen_random_uuid()), 
   (select now()), 
   (select now()), 
-  $1
+  $1,
+  $2
 )
-returning id, created_at, updated_at, email
+returning id, created_at, updated_at, email, password
 `
 
-func (q *Queries) AddUser(ctx context.Context, email string) (User, error) {
-	row := q.db.QueryRowContext(ctx, addUser, email)
+type AddUserParams struct {
+	Email    string
+	Password string
+}
+
+func (q *Queries) AddUser(ctx context.Context, arg AddUserParams) (User, error) {
+	row := q.db.QueryRowContext(ctx, addUser, arg.Email, arg.Password)
 	var i User
 	err := row.Scan(
 		&i.ID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Email,
+		&i.Password,
 	)
 	return i, err
 }

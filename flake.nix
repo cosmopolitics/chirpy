@@ -17,11 +17,7 @@
           pname = "chirpy";
           version = "v0.0.0";
           src = ./.;
-          subPackage = null;
-          vendorHash = "sha256-e9OJmQCUgtur6cuxwCaM8csZomE7rEUbtFi9aiEQ7fY=";
-          nativeBuildInputs = with pkgs; [
-            go
-          ];
+          vendorHash = null;
         };
         devShells.default = pkgs.mkShell {
           packages = with pkgs; [

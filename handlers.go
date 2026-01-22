@@ -7,10 +7,10 @@ import (
 	"os"
 	"time"
 
+	"github.com/cosmopolitics/chirpy/internal/auth"
 	"github.com/cosmopolitics/chirpy/internal/database"
 	"github.com/google/uuid"
 )
-
 
 func handler_readiness(w http.ResponseWriter, req *http.Request) {
 	w.Header().Add("Content-Type", "text/plain; charset=utf-8")
@@ -42,10 +42,50 @@ func (cfg *apiConfig) handler_reset(w http.ResponseWriter, req *http.Request) {
 
 }
 
-func (cfg *apiConfig) handler_chirp(w http.ResponseWriter, req *http.Request) {
+func (cfg *apiConfig) handler_create_user(w http.ResponseWriter, req *http.Request) {
+	type register_user struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+
+	type User struct {
+		ID        uuid.UUID `json:"id"`
+		CreatedAt time.Time `json:"created_at"`
+		UpdatedAt time.Time `json:"updated_at"`
+		Email     string    `json:"email"`
+	}
+
+	var jsonBody register_user
+	decoder := json.NewDecoder(req.Body)
+	err := decoder.Decode(&jsonBody)
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "failed to read request body", err)
+		return
+	}
+
+	hash, err := auth.HashPassword(jsonBody.Password)
+	user, err := cfg.dbquery.AddUser(req.Context(),
+		database.AddUserParams{
+			Email:    jsonBody.Email,
+			Password: hash,
+		})
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "failed to add user", err)
+		return
+	}
+
+	respondWithJSON(w, http.StatusCreated, User{
+		ID:        user.ID,
+		CreatedAt: user.CreatedAt,
+		UpdatedAt: user.UpdatedAt,
+		Email:     user.Email,
+	})
+}
+
+func (cfg *apiConfig) handler_add_chirp(w http.ResponseWriter, req *http.Request) {
 	type parameters struct {
 		User_id string `json:"user_id"`
-		Body string `json:"body"`
+		Body    string `json:"body"`
 	}
 
 	var params parameters
@@ -69,7 +109,7 @@ func (cfg *apiConfig) handler_chirp(w http.ResponseWriter, req *http.Request) {
 	verified_chirp := censor_chirp(params.Body)
 	chirp, err := cfg.dbquery.AddChirp(req.Context(), database.AddChirpParams{
 		Body: verified_chirp,
-		Uid: uid,
+		Uid:  uid,
 	})
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "failed to decode db response", err)
@@ -83,32 +123,52 @@ func (cfg *apiConfig) handler_chirp(w http.ResponseWriter, req *http.Request) {
 		chirp.UpdatedAt,
 		chirp.Body,
 	}
-	respondWithJSON(w, http.StatusOK, chirped)
+	respondWithJSON(w, http.StatusCreated, chirped)
 }
 
-func (cfg *apiConfig) handler_create_user(w http.ResponseWriter, req *http.Request) {
-	type email struct {
-		Email string `json:email`
-	}
-	type User struct {
-		ID        uuid.UUID `json:"id"`
-		CreatedAt time.Time `json:"created_at"`
-		UpdatedAt time.Time `json:"updated_at"`
-		Email     string    `json:"email"`
-	}
-	var jsonBody email
-	decoder := json.NewDecoder(req.Body)
-	err := decoder.Decode(&jsonBody)
+func (cfg *apiConfig) handler_get_chirps(w http.ResponseWriter, req *http.Request) {
+	chirps, err := cfg.dbquery.GetAllChirps(req.Context())
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "failed to read request body", err)
+		respondWithError(w, http.StatusInternalServerError, "db failed", err)
 		return
 	}
 
-	user, err := cfg.dbquery.AddUser(req.Context(), jsonBody.Email)
+	var chirpsjtags []Chirp
+	for _, c := range chirps {
+		chirpsjtags = append(chirpsjtags, Chirp{
+			c.ID,
+			c.Uid,
+			c.CreatedAt,
+			c.UpdatedAt,
+			c.Body,
+		})
+	}
+
+	respondWithJSON(w, http.StatusOK, chirpsjtags)
+}
+
+func (cfg *apiConfig) handler_get_a_chirp(w http.ResponseWriter, req *http.Request) {
+	chirp_id := req.PathValue("chirp_id")
+	cid, err := uuid.Parse(chirp_id)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "failed to add user", err)
+		respondWithError(w,
+			http.StatusBadRequest,
+			fmt.Sprintf("malformed chirp id: %s", chirp_id),
+			err,
+		)
+		return
+	}
+	chirp, err := cfg.dbquery.GetChirpById(req.Context(), cid)
+	if err != nil {
+		respondWithError(w, http.StatusNotFound, "", err)
 		return
 	}
 
-	respondWithJSON(w, http.StatusCreated, User(user))
+	respondWithJSON(w, http.StatusOK, Chirp{
+		chirp.ID,
+		chirp.Uid,
+		chirp.CreatedAt,
+		chirp.UpdatedAt,
+		chirp.Body,
+	})
 }
