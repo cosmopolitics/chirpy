@@ -15,7 +15,7 @@ type Chirp struct {
 	CreatedAt time.Time
 	UpdatedAt time.Time
 	Body      string
-	Uid       uuid.UUID
+	UserID    uuid.UUID
 }
 
 type User struct {

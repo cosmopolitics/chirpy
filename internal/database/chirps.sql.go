@@ -13,30 +13,30 @@ import (
 
 const addChirp = `-- name: AddChirp :one
 insert into 
-  chirps (id, created_at, updated_at, body, uid)
+  chirps (id, created_at, updated_at, body, user_id)
 values 
   ((select gen_random_uuid()), 
   (select now()),
   (select now()),
   $1, 
   $2)
-returning id, created_at, updated_at, body, uid
+returning id, created_at, updated_at, body, user_id
 `
 
 type AddChirpParams struct {
-	Body string
-	Uid  uuid.UUID
+	Body   string
+	UserID uuid.UUID
 }
 
 func (q *Queries) AddChirp(ctx context.Context, arg AddChirpParams) (Chirp, error) {
-	row := q.db.QueryRowContext(ctx, addChirp, arg.Body, arg.Uid)
+	row := q.db.QueryRowContext(ctx, addChirp, arg.Body, arg.UserID)
 	var i Chirp
 	err := row.Scan(
 		&i.ID,
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Body,
-		&i.Uid,
+		&i.UserID,
 	)
 	return i, err
 }
@@ -44,7 +44,7 @@ func (q *Queries) AddChirp(ctx context.Context, arg AddChirpParams) (Chirp, erro
 const getAllChirps = `-- name: GetAllChirps :many
 
 select 
-  id, created_at, updated_at, body, uid 
+  id, created_at, updated_at, body, user_id 
 from 
   chirps
 order by
@@ -65,7 +65,7 @@ func (q *Queries) GetAllChirps(ctx context.Context) ([]Chirp, error) {
 			&i.CreatedAt,
 			&i.UpdatedAt,
 			&i.Body,
-			&i.Uid,
+			&i.UserID,
 		); err != nil {
 			return nil, err
 		}
@@ -83,7 +83,7 @@ func (q *Queries) GetAllChirps(ctx context.Context) ([]Chirp, error) {
 const getChirpById = `-- name: GetChirpById :one
 
 select 
-  id, created_at, updated_at, body, uid
+  id, created_at, updated_at, body, user_id
 from 
   chirps
 where 
@@ -98,7 +98,7 @@ func (q *Queries) GetChirpById(ctx context.Context, id uuid.UUID) (Chirp, error)
 		&i.CreatedAt,
 		&i.UpdatedAt,
 		&i.Body,
-		&i.Uid,
+		&i.UserID,
 	)
 	return i, err
 }

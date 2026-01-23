@@ -17,6 +17,7 @@ import (
 type apiConfig struct {
 	count   atomic.Int64
 	dbquery *database.Queries
+	secret  string
 }
 
 type Chirp struct {
@@ -40,19 +41,23 @@ func main() {
 	dbqueries := database.New(db)
 	cfg := &apiConfig{
 		dbquery: dbqueries,
+		secret:  os.Getenv("JWT_SIGNING_KEY"),
 	}
 
 	mux := http.NewServeMux()
-	mux.Handle("/app/",
+	mux.Handle("GET /app/",
 		cfg.middlewareMetricsInc(
 			http.StripPrefix("/app", http.FileServer(http.Dir(filepathRoot)))))
+
+	mux.HandleFunc("GET /api/chirps", cfg.handler_get_chirps)
 	mux.HandleFunc("GET /api/healthz", handler_readiness)
 	mux.HandleFunc("GET /admin/metrics", cfg.handler_metrics)
-	mux.HandleFunc("POST /admin/reset", cfg.handler_reset)
-	mux.HandleFunc("POST /api/chirps", cfg.handler_add_chirp)
-	mux.HandleFunc("GET /api/chirps", cfg.handler_get_chirps)
-	mux.HandleFunc("POST /api/users", cfg.handler_create_user)
 	mux.HandleFunc("GET /api/chirps/{chirp_id}", cfg.handler_get_a_chirp)
+
+	mux.HandleFunc("POST /api/users", cfg.handler_create_user)
+	mux.HandleFunc("POST /api/login", cfg.handler_login)
+	mux.HandleFunc("POST /api/chirps", cfg.handler_add_chirp)
+	mux.HandleFunc("POST /admin/reset", cfg.handler_reset)
 
 	srv := &http.Server{
 		Addr:    ":" + port,

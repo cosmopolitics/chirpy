@@ -27,6 +27,7 @@
             postgresql
             goose
             sqlc
+            openssl
           ];
         };
 
