@@ -16,7 +16,11 @@ import (
 func (cfg *apiConfig) handler_reset(w http.ResponseWriter, req *http.Request) {
 	dev_status := os.Getenv("PLATFORM")
 	if dev_status != "dev" {
-		respondWithError(w, http.StatusForbidden, "", nil)
+		respondWithError(w, 
+			http.StatusForbidden, 
+			"", 
+			nil,
+		)
 		return
 	}
 	cfg.count.Swap(0)
@@ -40,7 +44,11 @@ func (cfg *apiConfig) handler_create_user(w http.ResponseWriter, req *http.Reque
 	decoder := json.NewDecoder(req.Body)
 	err := decoder.Decode(&jsonBody)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "failed to read request body", err)
+		respondWithError(w, 
+			http.StatusInternalServerError, 
+			"failed to read request body", 
+			err,
+		)
 		return
 	}
 
@@ -51,7 +59,11 @@ func (cfg *apiConfig) handler_create_user(w http.ResponseWriter, req *http.Reque
 			Password: hash,
 		})
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "failed to add user", err)
+		respondWithError(w, 
+			http.StatusInternalServerError, 
+			"failed to add user", 
+			err,
+		)
 		return
 	}
 
@@ -71,12 +83,20 @@ func (cfg *apiConfig) handler_add_chirp(w http.ResponseWriter, req *http.Request
 	//
 	bt, err := auth.GetBearerToken(req.Header)
 	if err != nil {
-		respondWithError(w, http.StatusUnauthorized, "no authorization provided", err)
+		respondWithError(w, 
+			http.StatusUnauthorized, 
+			"no authorization credentials", 
+			err,
+		)
 		return
 	}
 	uid, err := auth.ValidateJwt(bt, cfg.secret)
 	if err != nil {
-		respondWithError(w, http.StatusUnauthorized, "bad authorization provided", fmt.Errorf("%s: key: %s", err, bt))
+		respondWithError(w, 
+			http.StatusUnauthorized, 
+			"bad authorization credentials", 
+			fmt.Errorf("%s: key: %s", err, bt),
+		)
 		return
 	}
 
@@ -85,23 +105,35 @@ func (cfg *apiConfig) handler_add_chirp(w http.ResponseWriter, req *http.Request
 	decoder := json.NewDecoder(req.Body)
 	err = decoder.Decode(&params)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "couldn't decode chirp", err)
+		respondWithError(w, 
+			http.StatusInternalServerError, 
+			"couldn't decode chirp", 
+			err,
+		)
 		return
 	}
 
 	const maxchirplen = 140
 	if len(params.Body) > maxchirplen {
-		respondWithError(w, http.StatusBadRequest, "max chirp length exceeded", nil)
+		respondWithError(w, 
+			http.StatusBadRequest, 
+			"max chirp length exceeded", 
+			nil,
+		)
 		return
 	}
 
 	verified_chirp := censor_chirp(params.Body)
 	chirp, err := cfg.dbquery.AddChirp(req.Context(), database.AddChirpParams{
-		Body: verified_chirp,
-		UserID:  uid,
+		Body:   verified_chirp,
+		UserID: uid,
 	})
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "failed to decode db response", err)
+		respondWithError(w, 
+			http.StatusInternalServerError, 
+			"failed to decode db response", 
+			err,
+		)
 		return
 	}
 	//
@@ -118,68 +150,204 @@ func (cfg *apiConfig) handler_add_chirp(w http.ResponseWriter, req *http.Request
 
 func (cfg *apiConfig) handler_login(w http.ResponseWriter, r *http.Request) {
 	type login struct {
-		Email              string `json:"email"`
-		Password           string `json:"password"`
-		Expires_in_seconds int    `json:"expires_in_seconds"`
+		Email    string `json:"email"`
+		Password string `json:"password"`
 	}
 	type response struct {
-		ID         uuid.UUID `json:"id"`
-		Created_at time.Time `json:"created_at"`
-		Updated_at time.Time `json:"updated_at"`
-		Email      string    `json:"email"`
-		Token      string    `json:"token"`
+		ID            uuid.UUID `json:"id"`
+		Created_at    time.Time `json:"created_at"`
+		Updated_at    time.Time `json:"updated_at"`
+		Email         string    `json:"email"`
+		Token         string    `json:"token"`
+		Refresh_token string    `json:"refresh_token"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
 	var parsed_login login
 	err := decoder.Decode(&parsed_login)
 	if err != nil {
-		respondWithError(w, http.StatusBadRequest, "unable to decode body", err)
+		respondWithError(w, 
+			http.StatusBadRequest, 
+			"unable to decode body", 
+			err,
+		)
 		return
-	}
-	if parsed_login.Expires_in_seconds == 0 {
-		parsed_login.Expires_in_seconds = 60 * 60
 	}
 
 	//
 	user, err := cfg.dbquery.GetUserByEmail(r.Context(), parsed_login.Email)
 	if err == sql.ErrNoRows {
-		respondWithError(w, http.StatusBadRequest, "no user with that email", err)
+		respondWithError(w, 
+			http.StatusBadRequest, 
+			"no user with that email", 
+			err,
+		)
 		return
 
 	} else if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "error fetching user", err)
+		respondWithError(w, 
+			http.StatusInternalServerError, 
+			"error fetching user", 
+			err,
+		)
 		return
 	}
 
 	//
 	correct_password, err := auth.CheckPassword(parsed_login.Password, user.Password)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "error processing password", err)
+		respondWithError(w, 
+			http.StatusInternalServerError, 
+			"error processing password", 
+			err,
+		)
 		return
 	}
 
 	if !correct_password {
-		respondWithError(w, http.StatusUnauthorized, "incorrect email or password", nil)
+		respondWithError(w, 
+			http.StatusUnauthorized, 
+			"incorrect email or password", 
+			nil,
+		)
 		return
 	}
 
-	jtoken, err := auth.MakeJwt(
+	jwtoken, err := auth.MakeJwt(
 		user.ID,
 		cfg.secret,
-		time.Second * time.Duration(parsed_login.Expires_in_seconds),
+		time.Hour*time.Duration(1),
 	)
 	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "failed to make jwt ;-;", err)
+		respondWithError(w, 
+			http.StatusInternalServerError, 
+			"failed to make jwt ;-;", 
+			err,
+		)
 		return
+	}
+	//
+	refresh_t := auth.MakeRefreshToken()
+	_, err = cfg.dbquery.AddUsersRefreshToken(r.Context(),
+		database.AddUsersRefreshTokenParams{
+			Token:  refresh_t,
+			UserID: user.ID,
+		})
+	if err != nil {
+		respondWithError(w, 
+			http.StatusInternalServerError, 
+			"failed to make refresh token ;-;", 
+			err,
+		)
 	}
 
 	//
 	respondWithJSON(w, http.StatusOK, response{
-		ID:         user.ID,
-		Created_at: user.CreatedAt,
-		Updated_at: user.UpdatedAt,
-		Email:      user.Email,
-		Token:      jtoken,
+		ID:            user.ID,
+		Created_at:    user.CreatedAt,
+		Updated_at:    user.UpdatedAt,
+		Email:         user.Email,
+		Token:         jwtoken,
+		Refresh_token: refresh_t,
 	})
+}
+
+func (cfg *apiConfig) handler_refresh(w http.ResponseWriter, r *http.Request) {
+	type response struct {
+		Token string `json:"token"`
+	}
+
+	token, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		respondWithError(w, 
+			http.StatusUnauthorized, 
+			"bad authorization credentials", 
+			err,
+		)
+		return
+	}
+
+	u, err := cfg.dbquery.GetUserByRT(r.Context(), token)
+	if err == sql.ErrNoRows {
+		respondWithError(w,
+			http.StatusUnauthorized,
+			"bad authorization credentials",
+			err,
+		)
+		return
+
+	} else if err != nil {
+		respondWithError(w,
+			http.StatusInternalServerError,
+			"failed to query auth token",
+			err,
+		)
+		return
+	}
+
+	expired := !time.Now().Before(u.RevokedAt.Time) && u.RevokedAt.Valid
+	if expired {
+		respondWithError(w,
+			http.StatusUnauthorized,
+			"expired authorization credentials",
+			err,
+		)
+		return
+	}
+
+	t, err := auth.MakeJwt(u.ID, cfg.secret, time.Duration(time.Hour*1))
+	if err != nil {
+		respondWithError(w, 
+			http.StatusInternalServerError, 
+			"failed to make token", 
+			err,
+		)
+		return
+	}
+
+	respondWithJSON(w, http.StatusOK, response{Token: t})
+}
+
+func (cfg *apiConfig) handler_revoke(w http.ResponseWriter, r *http.Request) {
+	token, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		respondWithError(w, 
+			http.StatusUnauthorized, 
+			"bad credentials", 
+			err,
+		)
+		return
+	}
+
+	u, err := cfg.dbquery.GetUserByRT(r.Context(), token)
+	if err != nil {
+		respondWithError(w, 
+			http.StatusInternalServerError, 
+			"failed to query user by token", 
+			err,
+		)
+		return
+	}
+
+	expired := !time.Now().Before(u.RevokedAt.Time) && u.RevokedAt.Valid
+	if expired {
+		respondWithError(w, 
+			http.StatusUnauthorized, 
+			"bad credentials", 
+			err,
+		)
+		return
+	}
+
+	err = cfg.dbquery.RevokeRT(r.Context(), token)
+	if err != nil {
+		respondWithError(w, 
+			http.StatusInternalServerError, 
+			"failed to query user by token", 
+			err,
+		)
+		return
+	}
+
+	respondWithJSON(w, 204, nil)
 }

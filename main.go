@@ -58,6 +58,8 @@ func main() {
 	mux.HandleFunc("POST /api/login", cfg.handler_login)
 	mux.HandleFunc("POST /api/chirps", cfg.handler_add_chirp)
 	mux.HandleFunc("POST /admin/reset", cfg.handler_reset)
+	mux.HandleFunc("POST /api/refresh", cfg.handler_refresh)
+	mux.HandleFunc("POST /api/revoke", cfg.handler_revoke)
 
 	srv := &http.Server{
 		Addr:    ":" + port,
