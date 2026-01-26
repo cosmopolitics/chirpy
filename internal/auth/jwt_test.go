@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 )
+
 func TestCheckPasswordHash(t *testing.T) {
 	// First, we need to create some hashed passwords for testing
 	password1 := "correctPassword123!"

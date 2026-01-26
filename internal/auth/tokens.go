@@ -37,8 +37,8 @@ func MakeJwt(user_id uuid.UUID, token_secret string, expire_in time.Duration) (s
 func ValidateJwt(tokenString, tokenSecret string) (uuid.UUID, error) {
 	claimsStruct := jwt.RegisteredClaims{}
 	token, err := jwt.ParseWithClaims(tokenString, &claimsStruct,
-		func(token *jwt.Token) (interface{}, error) { 
-			return []byte(tokenSecret), nil 
+		func(token *jwt.Token) (interface{}, error) {
+			return []byte(tokenSecret), nil
 		})
 	if err != nil {
 		return uuid.Nil, err

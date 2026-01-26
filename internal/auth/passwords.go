@@ -26,4 +26,3 @@ func CheckPassword(password, hash string) (bool, error) {
 	}
 	return match, nil
 }
-

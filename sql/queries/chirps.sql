@@ -27,3 +27,10 @@ from
 where 
   id = $1;
 --
+
+-- name: DeleteChirp :exec
+delete from 
+  chirps
+where 
+  id = $1;
+--

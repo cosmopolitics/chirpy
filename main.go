@@ -21,7 +21,7 @@ type apiConfig struct {
 }
 
 type Chirp struct {
-	ID        uuid.UUID `json:"chirp_id"`
+	ID        uuid.UUID `json:"id"`
 	Uid       uuid.UUID `json:"user_id"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
@@ -60,6 +60,8 @@ func main() {
 	mux.HandleFunc("POST /admin/reset", cfg.handler_reset)
 	mux.HandleFunc("POST /api/refresh", cfg.handler_refresh)
 	mux.HandleFunc("POST /api/revoke", cfg.handler_revoke)
+
+	mux.HandleFunc("DELETE /api/chirps/{chirp_id}", cfg.handler_delete_chirp)
 
 	srv := &http.Server{
 		Addr:    ":" + port,
