@@ -76,8 +76,20 @@ func GetBearerToken(h http.Header) (string, error) {
 	return token, nil
 }
 
+func GetPolkaToken(h http.Header) (string, error) {
+	token := h.Get("Authorization")
+	if token == "" {
+		return "", fmt.Errorf("erm no token")
+	}
+	token, found := strings.CutPrefix(token, "ApiKey ")
+	if !found {
+		return "", fmt.Errorf("erm token not found")
+	}
+	return token, nil
+}
+
 func MakeRefreshToken() string {
 	buf := make([]byte, 32)
-	rand.Read(buf)
+	_, _ = rand.Read(buf)
 	return hex.EncodeToString(buf)
 }

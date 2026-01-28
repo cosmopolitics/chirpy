@@ -1,0 +1,125 @@
+version = '2'
+
+[linters]
+default = 'all'
+disable = [
+  'nlreturn',
+  'arangolint',
+  'asasalint',
+  'asciicheck',
+  'bidichk',
+  'bodyclose',
+  'canonicalheader',
+  'containedctx',
+  'contextcheck',
+  'decorder',
+  'dogsled',
+  'dupword',
+  'durationcheck',
+  'errname',
+  'exhaustive',
+  'exhaustruct',
+  'exptostd',
+  'fatcontext',
+  'forbidigo',
+  'forcetypeassert',
+  'funlen',
+  'ginkgolinter',
+  'gocheckcompilerdirectives',
+  'gochecknoinits',
+  'gochecksumtype',
+  'gocognit',
+  'gocritic',
+  'godoclint',
+  'godot',
+  'godox',
+  'goheader',
+  'gomoddirectives',
+  'gomodguard',
+  'goprintffuncname',
+  'grouper',
+  'importas',
+  'inamedparam',
+  'interfacebloat',
+  'iotamixing',
+  'ireturn',
+  'lll',
+  'loggercheck',
+  'maintidx',
+  'makezero',
+  'mirror',
+  'misspell',
+  'mnd',
+  'musttag',
+  'nakedret',
+  'nestif',
+  'nilerr',
+  'nilnesserr',
+  'nilnil',
+  'noctx',
+  'noinlineerr',
+  'nolintlint',
+  'nonamedreturns',
+  'nosprintfhostport',
+  'paralleltest',
+  'prealloc',
+  'predeclared',
+  'promlinter',
+  'protogetter',
+  'reassign',
+  'recvcheck',
+  'revive',
+  'rowserrcheck',
+  'sloglint',
+  'spancheck',
+  'sqlclosecheck',
+  'tagalign',
+  'tagliatelle',
+  'testableexamples',
+  'testifylint',
+  'testpackage',
+  'thelper',
+  'tparallel',
+  'unconvert',
+  'unparam',
+  'unqueryvet',
+  'usestdlibvars',
+  'usetesting',
+  'varnamelen',
+  'wastedassign',
+  'whitespace',
+  'wrapcheck',
+  'wsl',
+  'wsl_v5',
+  'zerologlint'
+]
+
+[linters.exclusions]
+generated = 'lax'
+presets = [
+  'comments',
+  'common-false-positives',
+  'legacy',
+  'std-error-handling'
+]
+paths = [
+  'third_party$',
+  'builtin$',
+  'examples$'
+]
+
+[formatters]
+enable = [
+  'gci',
+  'gofmt',
+  'gofumpt',
+  'goimports'
+]
+
+[formatters.exclusions]
+generated = 'lax'
+paths = [
+  'third_party$',
+  'builtin$',
+  'examples$'
+]

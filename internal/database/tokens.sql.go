@@ -43,7 +43,7 @@ func (q *Queries) AddUsersRefreshToken(ctx context.Context, arg AddUsersRefreshT
 const getUserByRT = `-- name: GetUserByRT :one
 
 select 
-  u.id, u.created_at, u.updated_at, u.email, u.password, 
+  u.id, u.created_at, u.updated_at, u.email, u.password, u.is_chirpy_red, 
   refresh_tokens.revoked_at 
 from 
   users u
@@ -55,12 +55,13 @@ where
 `
 
 type GetUserByRTRow struct {
-	ID        uuid.UUID
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	Email     string
-	Password  string
-	RevokedAt sql.NullTime
+	ID          uuid.UUID
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+	Email       string
+	Password    string
+	IsChirpyRed bool
+	RevokedAt   sql.NullTime
 }
 
 func (q *Queries) GetUserByRT(ctx context.Context, token string) (GetUserByRTRow, error) {
@@ -72,6 +73,7 @@ func (q *Queries) GetUserByRT(ctx context.Context, token string) (GetUserByRTRow
 		&i.UpdatedAt,
 		&i.Email,
 		&i.Password,
+		&i.IsChirpyRed,
 		&i.RevokedAt,
 	)
 	return i, err

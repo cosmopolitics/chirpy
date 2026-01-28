@@ -15,9 +15,10 @@ import (
 )
 
 type apiConfig struct {
-	count   atomic.Int64
-	dbquery *database.Queries
-	secret  string
+	count     atomic.Int64
+	dbquery   *database.Queries
+	secret    string
+	polka_key string
 }
 
 type Chirp struct {
@@ -32,7 +33,12 @@ func main() {
 	const filepathRoot = "."
 	const port = "8080"
 
-	godotenv.Load()
+	err := godotenv.Load()
+	if err != nil {
+		type inter interface{}
+		nilinter := new(inter)
+		panic(nilinter)
+	}
 	dbUrl := os.Getenv("DB_URL")
 	db, err := sql.Open("postgres", dbUrl)
 	if err != nil {
@@ -40,8 +46,9 @@ func main() {
 	}
 	dbqueries := database.New(db)
 	cfg := &apiConfig{
-		dbquery: dbqueries,
-		secret:  os.Getenv("JWT_SIGNING_KEY"),
+		dbquery:   dbqueries,
+		secret:    os.Getenv("JWT_SIGNING_KEY"),
+		polka_key: os.Getenv("POLKA_KEY"),
 	}
 
 	mux := http.NewServeMux()
@@ -60,12 +67,14 @@ func main() {
 	mux.HandleFunc("POST /admin/reset", cfg.handler_reset)
 	mux.HandleFunc("POST /api/refresh", cfg.handler_refresh)
 	mux.HandleFunc("POST /api/revoke", cfg.handler_revoke)
-
 	mux.HandleFunc("DELETE /api/chirps/{chirp_id}", cfg.handler_delete_chirp)
 
+	mux.HandleFunc("POST /api/polka/webhooks", cfg.handler_polka_webhook)
+
 	srv := &http.Server{
-		Addr:    ":" + port,
-		Handler: mux,
+		Addr:              ":" + port,
+		Handler:           mux,
+		ReadHeaderTimeout: time.Duration(time.Second * 10),
 	}
 
 	log.Printf("Serving files from %s on port: %s\n", filepathRoot, port)

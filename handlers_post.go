@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -24,7 +25,10 @@ func (cfg *apiConfig) handler_reset(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 	cfg.count.Swap(0)
-	cfg.dbquery.Reset(req.Context())
+	err := cfg.dbquery.Reset(req.Context())
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "reset failed??", err)
+	}
 }
 
 func (cfg *apiConfig) handler_create_user(w http.ResponseWriter, req *http.Request) {
@@ -34,10 +38,11 @@ func (cfg *apiConfig) handler_create_user(w http.ResponseWriter, req *http.Reque
 	}
 
 	type User struct {
-		ID        uuid.UUID `json:"id"`
-		CreatedAt time.Time `json:"created_at"`
-		UpdatedAt time.Time `json:"updated_at"`
-		Email     string    `json:"email"`
+		ID          uuid.UUID `json:"id"`
+		CreatedAt   time.Time `json:"created_at"`
+		UpdatedAt   time.Time `json:"updated_at"`
+		Email       string    `json:"email"`
+		IsChirpyRed bool      `json:"is_chirpy_red"`
 	}
 
 	var jsonBody register_user
@@ -53,6 +58,15 @@ func (cfg *apiConfig) handler_create_user(w http.ResponseWriter, req *http.Reque
 	}
 
 	hash, err := auth.HashPassword(jsonBody.Password)
+	if err != nil {
+		respondWithError(w,
+			http.StatusInternalServerError,
+			"failed to process password",
+			err,
+		)
+		return
+	}
+
 	user, err := cfg.dbquery.AddUser(req.Context(),
 		database.AddUserParams{
 			Email:    jsonBody.Email,
@@ -68,10 +82,11 @@ func (cfg *apiConfig) handler_create_user(w http.ResponseWriter, req *http.Reque
 	}
 
 	respondWithJSON(w, http.StatusCreated, User{
-		ID:        user.ID,
-		CreatedAt: user.CreatedAt,
-		UpdatedAt: user.UpdatedAt,
-		Email:     user.Email,
+		ID:          user.ID,
+		CreatedAt:   user.CreatedAt,
+		UpdatedAt:   user.UpdatedAt,
+		Email:       user.Email,
+		IsChirpyRed: user.IsChirpyRed,
 	})
 }
 
@@ -160,6 +175,7 @@ func (cfg *apiConfig) handler_login(w http.ResponseWriter, r *http.Request) {
 		Email         string    `json:"email"`
 		Token         string    `json:"token"`
 		Refresh_token string    `json:"refresh_token"`
+		IsChirpyRed   bool      `json:"is_chirpy_red"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -176,7 +192,7 @@ func (cfg *apiConfig) handler_login(w http.ResponseWriter, r *http.Request) {
 
 	//
 	user, err := cfg.dbquery.GetUserByEmail(r.Context(), parsed_login.Email)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		respondWithError(w,
 			http.StatusBadRequest,
 			"no user with that email",
@@ -249,6 +265,7 @@ func (cfg *apiConfig) handler_login(w http.ResponseWriter, r *http.Request) {
 		Email:         user.Email,
 		Token:         jwtoken,
 		Refresh_token: refresh_t,
+		IsChirpyRed:   user.IsChirpyRed,
 	})
 }
 
@@ -268,7 +285,7 @@ func (cfg *apiConfig) handler_refresh(w http.ResponseWriter, r *http.Request) {
 	}
 
 	u, err := cfg.dbquery.GetUserByRT(r.Context(), token)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		respondWithError(w,
 			http.StatusUnauthorized,
 			"bad authorization credentials",
@@ -393,7 +410,7 @@ func (cfg *apiConfig) handler_delete_chirp(w http.ResponseWriter, r *http.Reques
 	}
 
 	chirp, err := cfg.dbquery.GetChirpById(r.Context(), uuid_chirp)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		respondWithError(w,
 			http.StatusBadRequest,
 			"no chirp with that id",

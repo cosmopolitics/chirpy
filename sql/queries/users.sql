@@ -1,3 +1,7 @@
+-- name: Reset :exec
+delete from users where id = id;
+--
+
 -- name: AddUser :one
 insert into
   users (id, created_at, updated_at, email, password)
@@ -18,6 +22,13 @@ where
   email = $1;
 --
 
--- name: Reset :exec
-delete from users where id = id;
+-- name: SubcribeUser :one
+update  
+  users
+set
+  is_chirpy_red = true
+where 
+  id = $1
+returning 
+  true;
 --

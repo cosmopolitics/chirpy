@@ -7,9 +7,12 @@ package database
 
 import (
 	"context"
+
+	"github.com/google/uuid"
 )
 
 const addUser = `-- name: AddUser :one
+
 insert into
   users (id, created_at, updated_at, email, password)
 values (
@@ -19,7 +22,7 @@ values (
   $1,
   $2
 )
-returning id, created_at, updated_at, email, password
+returning id, created_at, updated_at, email, password, is_chirpy_red
 `
 
 type AddUserParams struct {
@@ -36,13 +39,14 @@ func (q *Queries) AddUser(ctx context.Context, arg AddUserParams) (User, error) 
 		&i.UpdatedAt,
 		&i.Email,
 		&i.Password,
+		&i.IsChirpyRed,
 	)
 	return i, err
 }
 
 const getUserByEmail = `-- name: GetUserByEmail :one
 
-select id, created_at, updated_at, email, password from
+select id, created_at, updated_at, email, password, is_chirpy_red from
   users
 where 
   email = $1
@@ -57,16 +61,35 @@ func (q *Queries) GetUserByEmail(ctx context.Context, email string) (User, error
 		&i.UpdatedAt,
 		&i.Email,
 		&i.Password,
+		&i.IsChirpyRed,
 	)
 	return i, err
 }
 
 const reset = `-- name: Reset :exec
-
 delete from users where id = id
 `
 
 func (q *Queries) Reset(ctx context.Context) error {
 	_, err := q.db.ExecContext(ctx, reset)
 	return err
+}
+
+const subcribeUser = `-- name: SubcribeUser :one
+
+update  
+  users
+set
+  is_chirpy_red = true
+where 
+  id = $1
+returning 
+  true
+`
+
+func (q *Queries) SubcribeUser(ctx context.Context, id uuid.UUID) (bool, error) {
+	row := q.db.QueryRowContext(ctx, subcribeUser, id)
+	var column_1 bool
+	err := row.Scan(&column_1)
+	return column_1, err
 }
