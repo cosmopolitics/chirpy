@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"slices"
 
+	"github.com/cosmopolitics/chirpy/internal/database"
 	"github.com/google/uuid"
 )
 
@@ -27,10 +29,40 @@ func (cfg *apiConfig) handler_metrics(w http.ResponseWriter, req *http.Request) 
 }
 
 func (cfg *apiConfig) handler_get_chirps(w http.ResponseWriter, req *http.Request) {
-	chirps, err := cfg.dbquery.GetAllChirps(req.Context())
-	if err != nil {
-		respondWithError(w, http.StatusInternalServerError, "db failed", err)
-		return
+	primary_id := req.URL.Query().Get("author_id")
+	sort_dir := req.URL.Query().Get("sort")
+
+	var chirps []database.Chirp
+	var err error
+	if primary_id == "" {
+		chirps, err = cfg.dbquery.GetAllChirps(req.Context())
+		if err != nil {
+			respondWithError(w,
+				http.StatusInternalServerError,
+				"db failed",
+				err,
+			)
+			return
+		}
+	} else {
+		uid, err := uuid.Parse(primary_id)
+		if err != nil {
+			respondWithError(w,
+				http.StatusBadRequest,
+				"malformed query",
+				err,
+			)
+			return
+		}
+		chirps, err = cfg.dbquery.GetUsersChirps(req.Context(), uid)
+		if err != nil {
+			respondWithError(w,
+				http.StatusInternalServerError,
+				"db  failed",
+				err,
+			)
+			return
+		}
 	}
 
 	var chirpsjtags []Chirp
@@ -41,6 +73,16 @@ func (cfg *apiConfig) handler_get_chirps(w http.ResponseWriter, req *http.Reques
 			c.CreatedAt,
 			c.UpdatedAt,
 			c.Body,
+		})
+	}
+
+	if sort_dir == "asc" {
+		slices.SortFunc(chirpsjtags, func(a, b Chirp) int {
+			return a.CreatedAt.Compare(b.CreatedAt)
+		})
+	} else if sort_dir == "desc" {
+		slices.SortFunc(chirpsjtags, func(a, b Chirp) int {
+			return b.CreatedAt.Compare(a.CreatedAt)
 		})
 	}
 

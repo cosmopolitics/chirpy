@@ -19,9 +19,9 @@ func (cfg *apiConfig) handler_polka_webhook(w http.ResponseWriter, r *http.Reque
 	}
 	pt, err := auth.GetPolkaToken(r.Header)
 	if pt != cfg.polka_key || err != nil {
-		respondWithError(w, 
-			http.StatusUnauthorized, 
-			"bad authorization credentials", 
+		respondWithError(w,
+			http.StatusUnauthorized,
+			"bad authorization credentials",
 			err,
 		)
 		return

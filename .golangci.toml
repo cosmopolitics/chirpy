@@ -4,6 +4,7 @@ version = '2'
 default = 'all'
 disable = [
   'nlreturn',
+  'depguard',
   'arangolint',
   'asasalint',
   'asciicheck',
